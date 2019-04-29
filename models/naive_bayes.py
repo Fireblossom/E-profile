@@ -75,7 +75,7 @@ class NB_classifier:
             negative = []
             negative_count = 0
             for t in range(len(text)):
-                if label[t][i] is True:
+                if label[t][i] == 1:
                     positive += text[t]
                     positive_count += 1
                 else:
