@@ -3,6 +3,12 @@ import math
 
 
 def normalization(token):
+    """
+    input a token and normalize it.
+    using a homemade stop word list :P
+    :param token:
+    :return:
+    """
     token = token.replace('\n', '')
     token = token.lower()
     skip_word_list = {'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by',
@@ -34,6 +40,12 @@ def normalization(token):
 
 
 def list_to_dict(lis, flag):
+    """
+    count the list elements and record them in the dictionary.
+    :param lis:
+    :param flag: normalize or not
+    :return: the dictionary of
+    """
     dic = {}
     for elem in lis:
         e = elem
@@ -52,6 +64,13 @@ def p_tc(dic, term, term_count, b):
 
 
 def cmap(pc, p_tc, p_lc):
+    """
+    Classification rule
+    :param pc:
+    :param p_tc:
+    :param p_lc:
+    :return:
+    """
     return math.log10(pc) + sum(p_tc) + p_lc
 
 
@@ -61,6 +80,11 @@ class NB_classifier:
         self.features = features
 
     def train(self, train_file):
+        """
+        input a string of file and train the model.
+        :param train_file:
+        :return:
+        """
         import models.tools.gen_label
         label = []
         text = []
@@ -131,6 +155,11 @@ class NB_classifier:
             self.model.append(dic)  # Training complete.
 
     def predict(self, text):
+        """
+        input a string of text and return the predict label of given text.
+        :param text:
+        :return:
+        """
         predict_label = []
         word_list = text.split()
         for i in range(self.features):
