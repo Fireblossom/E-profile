@@ -3,8 +3,6 @@ import math
 
 
 def normalization(token):
-    import re
-    token = re.sub(r'[^\w\s]', '', token)
     token = token.replace('\n', '')
     token = token.lower()
     skip_word_list = {'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by',
@@ -35,10 +33,12 @@ def normalization(token):
     return term
 
 
-def list_to_dict(lis):
+def list_to_dict(lis, flag):
     dic = {}
     for elem in lis:
-        e = normalization(elem)
+        e = elem
+        if flag:
+            e = normalization(elem)
         if e != '':
             if e in dic:
                 dic[e] += 1
@@ -51,8 +51,8 @@ def p_tc(dic, term, term_count, b):
     return (dic[term] + 1) / (term_count + b)
 
 
-def cmap(pc, p_tc):
-    return math.log10(pc) + sum(p_tc)
+def cmap(pc, p_tc, p_lc):
+    return math.log10(pc) + sum(p_tc) + p_lc
 
 
 class NB_classifier:
@@ -65,7 +65,7 @@ class NB_classifier:
         label = []
         text = []
         for line in train_file:
-            label.append = models.tools.gen_label.gen_label(line)
+            label.append(models.tools.gen_label.gen_label(line))
             content = line.split('\t')
             text.append(content[-1].split(" "))  # Try nltk?
 
@@ -82,12 +82,13 @@ class NB_classifier:
                     negative += text[t]
                     negative_count += 1
 
-            positive_dict = list_to_dict(positive)
+            positive_dict = list_to_dict(positive, True)
             positive_term = sum(positive_dict.values())
             pc_positive = positive_count / positive_count + negative_count
-            negative_dict = list_to_dict(negative)
+            negative_dict = list_to_dict(negative, True)
             negative_term = sum(negative_dict.values())
             pc_negative = negative_count / positive_count + negative_count
+            # prob of class.
 
             bins = len(set(list(positive_dict.keys()) + list(negative_dict.keys())))
 
@@ -97,10 +98,36 @@ class NB_classifier:
             p_tc_negative = {}
             for elem in negative_dict:
                 p_tc_negative[elem] = p_tc(negative_dict, elem, negative_term, bins)
-            
+            # prob of class given term.
+
+            p_lc_positive = {}
+            p_lc_negative = {}
+            lc_positive = []
+            lc_negative = []
+            lab = tuple(label)
+            for la in lab:
+                if la[i] == 1:
+                    lc_positive.append(tuple(la[:i]))
+                else:
+                    lc_negative.append(tuple(la[:i]))
+
+            lc_positive_dict = list_to_dict(lc_positive, False)
+            lc_positive_term = sum(lc_positive_dict.values())
+            lc_negative_dict = list_to_dict(lc_negative, False)
+            lc_negative_term = sum(lc_negative_dict.values())
+
+            lc_bins = len(set(list(lc_positive_dict.keys()) + list(lc_negative_dict.keys())))
+
+            for elem in lc_positive_dict:
+                p_lc_positive[elem] = p_tc(lc_positive_dict, elem, lc_positive_term, lc_bins)
+            for elem in lc_negative_dict:
+                p_lc_negative[elem] = p_tc(lc_negative_dict, elem, lc_negative_term, lc_bins)
+            # prob of class given previous labels sequence.
+
             dic = {'p_tc_positive': p_tc_positive, 'p_tc_negative': p_tc_negative, 'pc_positive': pc_positive,
                    'pc_negative': pc_negative, 'bins': bins, 'positive_term': positive_term,
-                   'negative_term': negative_term}
+                   'negative_term': negative_term, 'p_lc_positive': p_lc_positive, 'p_lc_negative': p_lc_negative,
+                   'lc_positive_term': lc_positive_term, 'lc_negative_term': lc_negative_term, 'lc_bins': lc_bins}
             self.model.append(dic)  # Training complete.
 
     def predict(self, text):
@@ -113,16 +140,24 @@ class NB_classifier:
                 w = normalization(word)
                 try:
                     p_tc_positive.append(math.log10(self.model[i]['p_tc_positive'][w]))
-                except:
-                    p_tc_positive.append(1 / (self.model[i]['positive_term'] + self.model[i]['bins']))
+                except KeyError:
+                    p_tc_positive.append(math.log10(1 / (self.model[i]['positive_term'] + self.model[i]['bins'])))
                 try:
                     p_tc_negative.append(math.log10(self.model[i]['p_tc_negative'][w]))
-                except:
-                    p_tc_negative.append(1 / (self.model[i]['negative_term'] + self.model[i]['bins']))
-                    
-            if cmap(self.model[i]['pc_positive'], p_tc_positive) > cmap(self.model[i]['pc_negative'], p_tc_negative):
-                predict_label.append(True)
+                except KeyError:
+                    p_tc_negative.append(math.log10(1 / (self.model[i]['negative_term'] + self.model[i]['bins'])))
+            try:
+                p_lc_positive = math.log10(self.model[i]['p_lc_positive'][tuple(predict_label)])
+            except KeyError:
+                p_lc_positive = math.log10(1 / self.model[i]['lc_positive_term'] + self.model[i]['lc_bins'])
+            try:
+                p_lc_negative = math.log10(self.model[i]['p_lc_negative'][tuple(predict_label)])
+            except KeyError:
+                p_lc_negative = math.log10(1 / self.model[i]['lc_negative_term'] + self.model[i]['lc_bins'])
+
+            if cmap(self.model[i]['pc_positive'], p_tc_positive, p_lc_positive) > cmap(self.model[i]['pc_negative'], p_tc_negative, p_lc_negative):
+                predict_label.append(1)
             else:
-                predict_label.append(False)
+                predict_label.append(0)
             
         return predict_label
