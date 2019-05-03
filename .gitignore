@@ -105,3 +105,6 @@ venv.bak/
 
 # pycharm
 .idea/
+.DS_Store
+train.csv
+val.csv
