@@ -27,12 +27,16 @@ def f_score(predict, gold):
     correct = [0] * len(gold[0])
     for i, j in zip(predict, gold):
         for elem in range(len(i)):
-            if i[elem] == 1 and i[elem] == j[elem]:
+            if i[elem] == 1 and j[elem] == 1:
                 correct[elem] += 1
     import numpy
-    precision = sum(numpy.divide(numpy.array(correct), numpy.array(col_sum(predict))).tolist()) / len(gold)
-    recall = sum(numpy.divide(numpy.array(correct), numpy.array(col_sum(gold))).tolist()) / len(gold)
-    return 2 * precision * recall / (precision + recall)
+    precision = numpy.divide(numpy.array(correct), numpy.array(col_sum(predict))).tolist()
+    recall = numpy.divide(numpy.array(correct), numpy.array(col_sum(gold))).tolist()
+
+    f_score = []
+    for p, r in zip(precision, recall):
+        f_score.append(2 * p * r /( p + r ))
+    return f_score
 
 
 def col_sum(mat):
