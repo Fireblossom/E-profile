@@ -1,28 +1,21 @@
 import models.tools.Stemming
 import math
+from nltk.tokenize import TweetTokenizer
+from nltk.corpus import stopwords
+import models.tools.gen_label
 
 
 def normalization(token):
     """
     input a token and normalize it.
-    using a homemade stop word list :P
+    using nltk stop word list :P
     :param token:
     :return:
     """
     token = token.replace('\n', '')
     token = token.lower()
-    skip_word_list = {'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by',
-                      'for', 'from', 'has', 'he', 'in', 'is', 'it', 'its', 'of', 'on',
-                      'that', 'the', 'to', 'was', 'were', 'will', 'with', 'so', 'still',
-                      'then', 'would', 'ein', 'eine', 'einem', 'einer', 'einen', 'eines',
-                      'und', 'sein', 'bin', 'bist', 'ist', 'sind', 'seid', 'war', 'warst',
-                      'war', 'waren', 'wart', 'da', 'in', 'ins', 'im', 'an', 'am', 'auf', 'bei',
-                      'für', 'hab', 'habe', 'hat', 'haben', 'ich', 'du', 'er', 'es', 'sie',
-                      'Sie', 'wir', 'ihr', 'mir', 'dir', 'ihr', 'ihm', 'uns', 'euch', 'ihnen',
-                      'mich', 'dich', 'ihn', 'diese', 'dieser', 'der', 'die', 'das', 'zu',
-                      'werden', 'werde', 'mit', 'als', 'hier', 'dass', 'so', 'noch', 'dann',
-                      'von', 'vom', 'ja'}
-    # Remove some grammatical vocabulary in German and English
+    skip_word_list = set(stopwords.words('english'))
+    # Remove some grammatical vocabulary in English
     if token in skip_word_list:
         return ''
     elif len(token) >= 8 and token[0:8] == 'https://':
@@ -30,8 +23,6 @@ def normalization(token):
     elif len(token) >= 1 and token[0] == '@':
         return ''  # Skip ID
     else:
-        if len(token) >= 2 and token[0] == '#':
-            token = token[1:]
         # The Porter Algorithm https://tartarus.org/martin/PorterStemmer/python.txt
         # Just fine tuned the code from Python 2 to Python 3.
         p = models.tools.Stemming.PorterStemmer()
@@ -85,13 +76,14 @@ class NB_classifier:
         :param train_file:
         :return:
         """
-        import models.tools.gen_label
+        tknzr = TweetTokenizer(strip_handles=True, reduce_len=True)
         label = []
         text = []
         for line in train_file:
-            label.append(models.tools.gen_label.gen_label(line))
-            content = line.split('\t')
-            text.append(content[-1].split(" "))  # Try nltk?
+            if line != 'XXXXXXXXXXXX EMPTY ANNOTATION\n':
+                label.append(models.tools.gen_label.gen_label(line))
+                content = line.split('\t')
+                text.append(tknzr.tokenize(content[-1]))
 
         for i in range(self.features):
             positive = []
