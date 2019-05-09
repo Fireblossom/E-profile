@@ -1,33 +1,4 @@
-import models.tools.Stemming
 import math
-from nltk.tokenize import TweetTokenizer
-from nltk.corpus import stopwords
-import models.tools.gen_label
-
-
-def normalization(token):
-    """
-    input a token and normalize it.
-    using nltk stop word list :P
-    :param token:
-    :return:
-    """
-    token = token.replace('\n', '')
-    token = token.lower()
-    skip_word_list = set(stopwords.words('english'))
-    # Remove some grammatical vocabulary in English
-    if token in skip_word_list:
-        return ''
-    elif len(token) >= 8 and token[0:8] == 'https://':
-        return ''  # Skip URL
-    elif len(token) >= 1 and token[0] == '@':
-        return ''  # Skip ID
-    else:
-        # The Porter Algorithm https://tartarus.org/martin/PorterStemmer/python.txt
-        # Just fine tuned the code from Python 2 to Python 3.
-        p = models.tools.Stemming.PorterStemmer()
-        term = p.stem(token, 0, len(token) - 1)
-    return term
 
 
 def list_to_dict(lis, flag):
@@ -39,14 +10,11 @@ def list_to_dict(lis, flag):
     """
     dic = {}
     for elem in lis:
-        e = elem
         if flag:
-            e = normalization(elem)
-        if e != '':
-            if e in dic:
-                dic[e] += 1
+            if elem in dic:
+                dic[elem] += 1
             else:
-                dic[e] = 1
+                dic[elem] = 1
     return dic
 
 
@@ -70,32 +38,23 @@ class NB_classifier:
         self.model = []
         self.features = features
 
-    def train(self, train_file):
+    def train(self, corpus):
         """
-        input a string of file and train the model.
-        :param train_file:
+        input a corpus object and train the model.
+        :param corpus:
         :return:
         """
-        tknzr = TweetTokenizer(strip_handles=True, reduce_len=True)
-        label = []
-        text = []
-        for line in train_file:
-            if line != 'XXXXXXXXXXXX EMPTY ANNOTATION\n':
-                label.append(models.tools.gen_label.gen_label(line))
-                content = line.split('\t')
-                text.append(tknzr.tokenize(content[-1]))
-
         for i in range(self.features):
             positive = []
             positive_count = 0
             negative = []
             negative_count = 0
-            for t in range(len(text)):
-                if label[t][i] == 1:
-                    positive += text[t]
+            for t in range(len(corpus.text)):
+                if corpus.gold[t][i] == 1:
+                    positive += corpus.text[t]
                     positive_count += 1
                 else:
-                    negative += text[t]
+                    negative += corpus.text[t]
                     negative_count += 1
 
             positive_dict = list_to_dict(positive, True)
@@ -120,12 +79,11 @@ class NB_classifier:
             p_lc_negative = {}
             lc_positive = []
             lc_negative = []
-            lab = tuple(label)
-            for la in lab:
-                if la[i] == 1:
-                    lc_positive.append(tuple(la[:i]))
+            for label in corpus.gold:
+                if label[i] == 1:
+                    lc_positive.append(tuple(label[:i]))
                 else:
-                    lc_negative.append(tuple(la[:i]))
+                    lc_negative.append(tuple(label[:i]))
 
             lc_positive_dict = list_to_dict(lc_positive, False)
             lc_positive_term = sum(lc_positive_dict.values())
@@ -146,39 +104,41 @@ class NB_classifier:
                    'lc_positive_term': lc_positive_term, 'lc_negative_term': lc_negative_term, 'lc_bins': lc_bins}
             self.model.append(dic)  # Training complete.
 
-    def predict(self, text):
+    def predict(self, corpus):
         """
-        input a string of text and return the predict label of given text.
-        :param text:
+        input corpus and return the predict labels of given corpus.
+        :param corpus:
         :return:
         """
-        predict_label = []
-        word_list = text.split()
-        for i in range(self.features):
-            p_tc_positive = []
-            p_tc_negative = []
-            for word in word_list:
-                w = normalization(word)
+        predict_labels = []
+        for index in range(len(corpus.text)):
+            word_list = corpus.text[index]
+            predict_label = []
+            for i in range(self.features):
+                p_tc_positive = []
+                p_tc_negative = []
+                for word in word_list:
+                    try:
+                        p_tc_positive.append(math.log10(self.model[i]['p_tc_positive'][word]))
+                    except KeyError:
+                        p_tc_positive.append(math.log10(1 / (self.model[i]['positive_term'] + self.model[i]['bins'])))
+                    try:
+                        p_tc_negative.append(math.log10(self.model[i]['p_tc_negative'][word]))
+                    except KeyError:
+                        p_tc_negative.append(math.log10(1 / (self.model[i]['negative_term'] + self.model[i]['bins'])))
                 try:
-                    p_tc_positive.append(math.log10(self.model[i]['p_tc_positive'][w]))
+                    p_lc_positive = math.log10(self.model[i]['p_lc_positive'][tuple(predict_label)])
                 except KeyError:
-                    p_tc_positive.append(math.log10(1 / (self.model[i]['positive_term'] + self.model[i]['bins'])))
+                    p_lc_positive = math.log10(1 / self.model[i]['lc_positive_term'] + self.model[i]['lc_bins'])
                 try:
-                    p_tc_negative.append(math.log10(self.model[i]['p_tc_negative'][w]))
+                    p_lc_negative = math.log10(self.model[i]['p_lc_negative'][tuple(predict_label)])
                 except KeyError:
-                    p_tc_negative.append(math.log10(1 / (self.model[i]['negative_term'] + self.model[i]['bins'])))
-            try:
-                p_lc_positive = math.log10(self.model[i]['p_lc_positive'][tuple(predict_label)])
-            except KeyError:
-                p_lc_positive = math.log10(1 / self.model[i]['lc_positive_term'] + self.model[i]['lc_bins'])
-            try:
-                p_lc_negative = math.log10(self.model[i]['p_lc_negative'][tuple(predict_label)])
-            except KeyError:
-                p_lc_negative = math.log10(1 / self.model[i]['lc_negative_term'] + self.model[i]['lc_bins'])
+                    p_lc_negative = math.log10(1 / self.model[i]['lc_negative_term'] + self.model[i]['lc_bins'])
 
-            if cmap(self.model[i]['pc_positive'], p_tc_positive, p_lc_positive) > cmap(self.model[i]['pc_negative'], p_tc_negative, p_lc_negative):
-                predict_label.append(1)
-            else:
-                predict_label.append(0)
+                if cmap(self.model[i]['pc_positive'], p_tc_positive, p_lc_positive) > cmap(self.model[i]['pc_negative'], p_tc_negative, p_lc_negative):
+                    predict_label.append(1)
+                else:
+                    predict_label.append(0)
+            predict_labels.append(predict_label)
             
-        return predict_label
+        return predict_labels
