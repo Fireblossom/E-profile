@@ -1,13 +1,14 @@
 from models.naive_bayes import NB_classifier
+from models.linear import L_classifier
 import models.tools.file_writer
 from models.tools.Corpus import Corpus
 
-train_corpus = Corpus('gold.csv')
+train_corpus = Corpus('train.csv')
 
-model = NB_classifier(8)
+model = L_classifier(8)
 model.train(train_corpus)
 
-val_corpus = Corpus('gold.csv')
+val_corpus = Corpus('val.csv')
 val_corpus.set_predict(model.predict(val_corpus))
 val_corpus.set_label_title(('Anger', 'Anticipation', 'Disgust', 'Fear', 'Joy', 'Sadness', 'Surprise', 'Trust'))
 eval_result = val_corpus.eval()

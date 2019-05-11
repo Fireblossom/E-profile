@@ -4,6 +4,7 @@ import models.tools.gen_label
 from nltk.tokenize import TweetTokenizer
 import string
 from prettytable import PrettyTable
+import nltk
 
 
 class Corpus:
@@ -16,7 +17,8 @@ class Corpus:
                 if line != 'XXXXXXXXXXXX EMPTY ANNOTATION\n':
                     self.gold.append(models.tools.gen_label.gen_label(line))
                     content = line.split('\t')
-                    self.text.append(text(normalization(tknzr.tokenize(content[-1]))))
+                    tokens = tknzr.tokenize(content[-1])
+                    self.text.append(text(normalization(tokens)))
 
     def set_predict(self, predict):
         self.pred = predict
@@ -36,19 +38,25 @@ class Corpus:
                                res['TP'][label],
                                res['FP'][label],
                                res['FN'][label],
-                               res['Recall'][label],
-                               res['Precision'][label],
-                               res['F-score'][label]
+                               round(res['Recall'][label], 4),
+                               round(res['Precision'][label], 4),
+                               round(res['F-score'][label], 4)
                                ])
-            table.add_row(['', '', '', '', '', 'Macro', sum(res['F-score'])/len(res['F-score'])])
+            table.add_row(['', '', '', '', '', 'Macro', round(sum(res['F-score'])/len(res['F-score']), 4)])
             return table
         else:
             return False
 
 
+WANT_TAGS = {'JJ', 'JJR', 'JJS'}
+NEG_ADJ = {'wrong', 'bad', 'last', 'dear'}
+POS_ADJ = {'good', 'great', 'best', 'new', 'happy', 'greatest', 'beautiful', 'agree', 'amazing', 'welcome', 'clear', 'awesome'}
+
+
 class text:
     def __init__(self, words):
-        self.words = words
+        self.words = [x[0] for x in words]
+        self.pos_tags = [x[1] for x in words]
 
     def feature_extraction(self):
         features = []
@@ -57,6 +65,16 @@ class text:
         else:
             features.append(0)
         # Rules of feature extraction.
+        f_1, f_2, f_3 = 0, 0, 0
+        for word in self.words:
+            if word in NEG_ADJ:
+                f_1 += 1
+            if word in POS_ADJ:
+                f_2 += 1
+        for tag in self.pos_tags:
+            if tag in WANT_TAGS:
+                f_3 += 1
+        features += [f_1, f_2, f_3]
         return features
 
 
@@ -95,8 +113,8 @@ def normalization(tokens):
             # Add NOT symbol until next punctuation. -- following the Stanford NLP.
         else:
             terms.append(token)  # p.stem(token, 0, len(token) - 1))
-
-    return terms
+    pos_tags = nltk.pos_tag(terms)
+    return pos_tags
 
 
 def score(predict, gold):
