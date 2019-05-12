@@ -4,8 +4,8 @@
 blahblah
 
 TODO:
-- [ ] Eval (TAN)
+- [x] Eval (TAN)
 - [x] Restructuring (DUAN)
 - [x] Perceptron - Linear classification (DUAN)
-- [ ] Feature Extraction (TAN)
+- [x] Feature Extraction (TAN)
 - [ ] N-gram (DUAN)

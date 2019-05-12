@@ -49,8 +49,9 @@ class Corpus:
 
 
 WANT_TAGS = {'JJ', 'JJR', 'JJS'}
-NEG_ADJ = {'wrong', 'bad', 'last', 'dear'}
-POS_ADJ = {'good', 'great', 'best', 'new', 'happy', 'greatest', 'beautiful', 'agree', 'amazing', 'welcome', 'clear', 'awesome'}
+NEG_ADJ = {'wrong', 'bad', 'last', 'dear', 'NOT_equal', 'dead', 'illegal', 'stupid', 'serious', 'worse'}
+POS_ADJ = {'good', 'great', 'best', 'happy', 'greatest', 'beautiful', 'agree', 'amazing', 'welcome', 'clear', 'awesome',
+           'equal', 'right', 'brilliant', 'dangerous', 'excited', 'nice', 'responsible', 'honest'}
 
 
 class text:
@@ -89,32 +90,32 @@ def normalization(tokens):
     negative_word_flag = False
     skip_word_list = set(stopwords.words('english'))
     # Remove some grammatical vocabulary in English
-    p = models.tools.Stemming.PorterStemmer()
-    for token in tokens:
-        token = token.replace('\n', '')
-        token = token.lower()
-        if token == 'not' or token[-3:] == "n't":
+    pos_tags = nltk.pos_tag(tokens)
+    for token in pos_tags:
+        # token[0] = token[0].replace('\n', '')
+        # token[0] = token[0].lower()
+        if token[0] == 'not' or token[0][-3:] == "n't":
             negative_word_flag = True
-        elif token in string.punctuation:
+        elif token[0] in string.punctuation:
             negative_word_flag = False
 
-        if token in skip_word_list:
+        if token[0] in skip_word_list:
             continue
-        elif len(token) >= 8 and token[0:8] == 'https://':
+        elif len(token[0]) >= 8 and token[0][0:8] == 'https://':
             continue  # Skip URL
-        elif len(token) >= 1 and token[0] == '@':
+        elif len(token[0]) >= 1 and token[0][0] == '@':
             continue  # Skip ID
-        elif len(token) >= 1 and token[0] == '#':
+        elif len(token[0]) >= 1 and token[0][0] == '#':
             continue  # Skip #
         elif negative_word_flag:
             # The Porter Algorithm https://tartarus.org/martin/PorterStemmer/python.txt
             # Just fine tuned the code from Python 2 to Python 3.
-            terms.append('NOT_' + p.stem(token, 0, len(token) - 1))
+            terms.append(('NOT_' + token[0].lower(), token[1]))
             # Add NOT symbol until next punctuation. -- following the Stanford NLP.
         else:
-            terms.append(token)  # p.stem(token, 0, len(token) - 1))
-    pos_tags = nltk.pos_tag(terms)
-    return pos_tags
+            terms.append((token[0].lower(), token[1]))  # p.stem(token, 0, len(token) - 1))
+
+    return terms
 
 
 def score(predict, gold):
