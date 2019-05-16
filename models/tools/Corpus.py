@@ -5,6 +5,7 @@ from nltk.tokenize import TweetTokenizer
 import string
 from prettytable import PrettyTable
 import nltk
+import math
 
 
 class Corpus:
@@ -12,13 +13,16 @@ class Corpus:
         self.label_title = []
         with open(filename) as file:
             self.text, self.gold, self.pred = [], [], []
+            self.document_count = 0
             tknzr = TweetTokenizer(strip_handles=True, reduce_len=True)
             for line in file:
                 if line != 'XXXXXXXXXXXX EMPTY ANNOTATION\n':
+                    self.document_count += 1
                     self.gold.append(models.tools.gen_label.gen_label(line))
                     content = line.split('\t')
                     tokens = tknzr.tokenize(content[-1])
                     self.text.append(text(normalization(tokens)))
+        self.tf_idf = self.tfidf()
 
     def set_predict(self, predict):
         self.pred = predict
@@ -47,6 +51,26 @@ class Corpus:
         else:
             return False
 
+    def tfidf(self):
+        vocabulary = {}
+        term_count = 0
+        for instance in self.text:
+            for word in instance.words:
+                term_count += 1
+                if word in vocabulary:
+                    vocabulary[word] += 1
+                else:
+                    vocabulary[word] = 1
+        tf_idf = {}
+        for word in vocabulary:
+            tf = vocabulary[word] / term_count
+            df = 0
+            for doc in self.text:
+                if word in doc.words:
+                    df += 1
+            tf_idf[word] = (1 + math.log10(tf)) * math.log10(self.document_count / df)
+        return tf_idf
+
 
 WANT_TAGS = {'JJ', 'JJR', 'JJS'}
 NEG_ADJ = {'wrong', 'bad', 'last', 'dear', 'NOT_equal', 'dead', 'illegal', 'stupid', 'serious', 'worse'}
@@ -59,23 +83,30 @@ class text:
         self.words = [x[0] for x in words]
         self.pos_tags = [x[1] for x in words]
 
-    def feature_extraction(self):
-        features = []
-        if 'hit' in self.words:
-            features.append(1)
+    def feature_extraction(self, tf_idf):
+        """
+        generate boolean and another features
+        :param tf_idf: to be continue...
+        :return:
+        """
+        features = {}
+        jjs = 0
+        for tags in self.pos_tags:
+            if tags in WANT_TAGS:
+                jjs += 0
+        if jjs >= 3:
+            features['more than three adjectives'] = True
         else:
-            features.append(0)
-        # Rules of feature extraction.
-        f_1, f_2, f_3 = 0, 0, 0
+            features['more than three adjectives'] = False
+
+        features['word from POS_ADJ'] = False
+        features['word from NEG_ADJ'] = False
         for word in self.words:
-            if word in NEG_ADJ:
-                f_1 += 1
             if word in POS_ADJ:
-                f_2 += 1
-        for tag in self.pos_tags:
-            if tag in WANT_TAGS:
-                f_3 += 1
-        features += [f_1, f_2, f_3]
+                features['word from POS_ADJ'] = True
+            elif word in NEG_ADJ:
+                features['word from NEG_ADJ'] = True
+
         return features
 
 

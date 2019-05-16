@@ -10,18 +10,19 @@ class L_classifier:
     def train(self, corpus):
         for label in range(self.labels):
             labels = []
-            features = []
+            vectors = []
             for inst in range(len(corpus.text)):
-                features.append(np.array(corpus.text[inst].feature_extraction()))
+                feature = corpus.text[inst].feature_extraction(corpus.tf_idf)
                 labels.append(corpus.gold[inst][label])
-            self.w.append(perceptron(features, labels))
+                vectors.append(feature2vector(feature))
+            self.w.append(perceptron(vectors, labels))
 
     def predict(self, corpus):
         predict = []
         for inst in range(len(corpus.text)):
             labels = []
             for label in range(self.labels):
-                if dot(self.w[label], corpus.text[inst].feature_extraction()) >= 0:
+                if dot(self.w[label], feature2vector(corpus.text[inst].feature_extraction(corpus.tf_idf))) >= 0:
                     labels.append(1)
                 else:
                     labels.append(0)
@@ -47,3 +48,14 @@ def perceptron(features, labels):
             flag = True
         count += 1
     return w
+
+
+def feature2vector(feature):
+    vector = []
+    for elem in feature:
+        if feature[elem] is True:
+            vector.append(1)
+        else:
+            vector.append(-1)
+    return vector
+
