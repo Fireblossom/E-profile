@@ -23,6 +23,7 @@ class Corpus:
                     tokens = tknzr.tokenize(content[-1])
                     self.text.append(text(normalization(tokens)))
         self.tf_idf = self.tfidf()
+        self.top_words = find_valueable_word(self.tf_idf)
 
     def set_predict(self, predict):
         self.pred = predict
@@ -72,6 +73,15 @@ class Corpus:
         return tf_idf
 
 
+def find_valueable_word(tf_idf):
+    top = sorted(tf_idf.items(), key=lambda item: item[1], reverse=True)
+    top = top[:50]
+    top_words = []
+    for word in top:
+        top_words.append(word[0])
+    return top_words
+
+
 WANT_TAGS = {'JJ', 'JJR', 'JJS'}
 NEG_ADJ = {'wrong', 'bad', 'last', 'dear', 'NOT_equal', 'dead', 'illegal', 'stupid', 'serious', 'worse'}
 POS_ADJ = {'good', 'great', 'best', 'happy', 'greatest', 'beautiful', 'agree', 'amazing', 'welcome', 'clear', 'awesome',
@@ -83,9 +93,9 @@ class text:
         self.words = [x[0] for x in words]
         self.pos_tags = [x[1] for x in words]
 
-    def feature_extraction(self, tf_idf):
+    def feature_extraction(self, tf_idf_words):
         """
-        generate boolean and another features
+        generate boolean features
         :param tf_idf: to be continue...
         :return:
         """
@@ -106,6 +116,11 @@ class text:
                 features['word from POS_ADJ'] = True
             elif word in NEG_ADJ:
                 features['word from NEG_ADJ'] = True
+        for w in tf_idf_words:
+            if w in self.words:
+                features[w] = True
+            else:
+                features[w] = False
 
         return features
 

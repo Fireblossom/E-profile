@@ -9,7 +9,7 @@ model.train(train_corpus)
 print(model.w)
 
 val_corpus = Corpus('val.csv')
-val_corpus.set_predict(model.predict(val_corpus))
+val_corpus.set_predict(model.predict(val_corpus, train_corpus.top_words))
 
 val_corpus.set_label_title(('Anger', 'Anticipation', 'Disgust', 'Fear', 'Joy', 'Sadness', 'Surprise', 'Trust'))
 eval_result = val_corpus.eval()

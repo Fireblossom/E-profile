@@ -12,17 +12,17 @@ class L_classifier:
             labels = []
             vectors = []
             for inst in range(len(corpus.text)):
-                feature = corpus.text[inst].feature_extraction(corpus.tf_idf)
+                feature = corpus.text[inst].feature_extraction(corpus.top_words)
                 labels.append(corpus.gold[inst][label])
                 vectors.append(feature2vector(feature))
             self.w.append(perceptron(vectors, labels))
 
-    def predict(self, corpus):
+    def predict(self, corpus, top_words):
         predict = []
         for inst in range(len(corpus.text)):
             labels = []
             for label in range(self.labels):
-                if dot(self.w[label], feature2vector(corpus.text[inst].feature_extraction(corpus.tf_idf))) >= 0:
+                if dot(self.w[label], feature2vector(corpus.text[inst].feature_extraction(top_words))) >= 0:
                     labels.append(1)
                 else:
                     labels.append(0)
