@@ -13,8 +13,8 @@ class L_classifier:
             vectors = []
             for inst in range(len(corpus.text)):
                 feature = corpus.text[inst].feature_extraction(corpus.top_words)
-                labels.append(corpus.gold[inst][label])
                 vectors.append(feature2vector(feature))
+                labels.append(corpus.gold[inst][label])
             self.w.append(perceptron(vectors, labels))
 
     def predict(self, corpus, top_words):
@@ -30,19 +30,19 @@ class L_classifier:
         return predict
 
 
-def perceptron(features, labels):
-    w = np.array([0] * len(features[0]))
+def perceptron(vectors, labels):
+    w = np.array([0] * len(vectors[0]))
     flag = False
     count = 0
     while not flag and count < 100:
-        for i in range(len(features)):
-            t = dot(features[i], w)
+        for i in range(len(vectors)):
+            t = dot(vectors[i], w)
             if t <= 0 and labels[i] == 1:
-                w += features[i]
+                w += vectors[i]
                 flag = False
                 break
             if t >= 0 and labels[i] == 0:
-                w -= features[i]
+                w -= vectors[i]
                 flag = False
                 break
             flag = True

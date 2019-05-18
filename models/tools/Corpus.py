@@ -56,12 +56,13 @@ class Corpus:
         vocabulary = {}
         term_count = 0
         for instance in self.text:
-            for word in instance.words:
-                term_count += 1
-                if word in vocabulary:
-                    vocabulary[word] += 1
-                else:
-                    vocabulary[word] = 1
+            for word, tag in zip(instance.words, instance.pos_tags):
+                if tag in WANT_TAGS:
+                    term_count += 1
+                    if word in vocabulary:
+                        vocabulary[word] += 1
+                    else:
+                        vocabulary[word] = 1
         tf_idf = {}
         for word in vocabulary:
             tf = vocabulary[word] / term_count
@@ -75,7 +76,7 @@ class Corpus:
 
 def find_valueable_word(tf_idf):
     top = sorted(tf_idf.items(), key=lambda item: item[1], reverse=True)
-    top = top[:50]
+    top = top[:20]
     top_words = []
     for word in top:
         top_words.append(word[0])
