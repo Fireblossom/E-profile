@@ -29,6 +29,21 @@ class L_classifier:
             predict.append(labels)
         return predict
 
+    def test_sentence(self, sentence, top_words):
+        from nltk.tokenize import TweetTokenizer
+        tknzr = TweetTokenizer(strip_handles=True, reduce_len=True)
+        tokens = tknzr.tokenize(sentence)
+        import models.tools.Corpus
+        terms = models.tools.Corpus.normalization(tokens)
+        words = models.tools.Corpus.text(terms)
+        labels = []
+        for label in range(self.labels):
+            if dot(self.w[label], feature2vector(words.feature_extraction(top_words))) >= 0:
+                labels.append(1)
+            else:
+                labels.append(0)
+        return labels
+
 
 def perceptron(vectors, labels):
     w = np.array([0] * len(vectors[0]))
