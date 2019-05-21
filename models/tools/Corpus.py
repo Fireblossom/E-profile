@@ -2,14 +2,19 @@ import models.tools.Stemming
 from nltk.corpus import stopwords
 import models.tools.gen_label
 from nltk.tokenize import TweetTokenizer
-import string
 from prettytable import PrettyTable
 import nltk
 import math
+import string
 
 
 class Corpus:
     def __init__(self, filename):
+        """
+        read the csv file and set the obtained labels as gold label.
+        tokenizing the text, removing English stop words and storing them in a list.
+        :param filename:
+        """
         self.label_title = []
         with open(filename) as file:
             self.text, self.gold, self.pred = [], [], []
@@ -23,12 +28,21 @@ class Corpus:
                     tokens = tknzr.tokenize(content[-1])
                     self.text.append(text(normalization(tokens)))
         self.tf_idf = self.tfidf()
-        self.top_words = find_valueable_word(self.tf_idf)
 
     def set_predict(self, predict):
+        """
+        accept the predict labels from model and store it for evaluation.
+        :param predict:
+        :return:
+        """
         self.pred = predict
 
     def set_label_title(self, title):
+        """
+        set label titles for evaluation result table.
+        :param title:
+        :return:
+        """
         if len(title) == len(self.gold[0]):
             self.label_title = title
         else:
@@ -53,11 +67,15 @@ class Corpus:
             return False
 
     def tfidf(self):
+        """
+        Calculate the tf-idf weights of all words in the corpus, return the dictionary.
+        :return:
+        """
         vocabulary = {}
         term_count = 0
         for instance in self.text:
             for word, tag in zip(instance.words, instance.pos_tags):
-                if tag in WANT_TAGS:
+                if word not in string.punctuation:  # tag in WANT_TAGS:
                     term_count += 1
                     if word in vocabulary:
                         vocabulary[word] += 1
@@ -74,15 +92,6 @@ class Corpus:
         return tf_idf
 
 
-def find_valueable_word(tf_idf):
-    top = sorted(tf_idf.items(), key=lambda item: item[1], reverse=True)
-    top = top[:20]
-    top_words = []
-    for word in top:
-        top_words.append(word[0])
-    return top_words
-
-
 WANT_TAGS = {'JJ', 'JJR', 'JJS'}
 NEG_ADJ = {'wrong', 'bad', 'last', 'dear', 'NOT_equal', 'dead', 'illegal', 'stupid', 'serious', 'worse'}
 POS_ADJ = {'good', 'great', 'best', 'happy', 'greatest', 'beautiful', 'agree', 'amazing', 'welcome', 'clear', 'awesome',
@@ -94,35 +103,30 @@ class text:
         self.words = [x[0] for x in words]
         self.pos_tags = [x[1] for x in words]
 
-    def feature_extraction(self, tf_idf_words):
+    def feature_extraction(self):
         """
         generate boolean features
         :param tf_idf: to be continue...
         :return:
         """
-        features = {}
+        features = []
         jjs = 0
         for tags in self.pos_tags:
             if tags in WANT_TAGS:
                 jjs += 0
         if jjs >= 3:
-            features['more than three adjectives'] = True
+            features.append(True)
         else:
-            features['more than three adjectives'] = False
+            features.append(False)
 
-        features['word from POS_ADJ'] = False
-        features['word from NEG_ADJ'] = False
+        features.append(False)
+        features.append(False)
         for word in self.words:
             if word in POS_ADJ:
-                features['word from POS_ADJ'] = True
+                features[1] = True
             elif word in NEG_ADJ:
-                features['word from NEG_ADJ'] = True
-        for w in tf_idf_words:
-            if w in self.words:
-                features[w] = True
-            else:
-                features[w] = False
-
+                features[2] = True
+            features.append(word)
         return features
 
 

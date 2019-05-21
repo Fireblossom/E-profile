@@ -49,10 +49,10 @@ class NB_classifier:
             negative_count = 0
             for t in range(len(corpus.text)):
                 if corpus.gold[t][i] == 1:
-                    positive += corpus.text[t]
+                    positive += corpus.text[t].words
                     positive_count += 1
                 else:
-                    negative += corpus.text[t]
+                    negative += corpus.text[t].words
                     negative_count += 1
 
             positive_dict = list_to_dict(positive)
@@ -115,7 +115,7 @@ class NB_classifier:
             for i in range(self.features):
                 p_tc_positive = []
                 p_tc_negative = []
-                for word in word_list:
+                for word in word_list.words:
                     try:
                         p_tc_positive.append(math.log10(self.model[i]['p_tc_positive'][word]))
                     except KeyError:
