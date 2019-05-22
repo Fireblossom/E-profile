@@ -61,7 +61,7 @@ class Corpus:
                                round(res['Precision'][label], 4),
                                round(res['F-score'][label], 4)
                                ])
-            table.add_row(['', '', '', '', '', 'Macro', round(sum(res['F-score'])/len(res['F-score']), 4)])
+            table.add_row(['', '', '', '', '', 'Macro', round(sum(res['F-score']) / len(res['F-score']), 4)])
             return table
         else:
             return False
@@ -81,6 +81,8 @@ class Corpus:
                         vocabulary[word] += 1
                     else:
                         vocabulary[word] = 1
+        # print(vocabulary)
+        # print(term_count)
         tf_idf = {}
         for word in vocabulary:
             tf = vocabulary[word] / term_count
@@ -105,8 +107,7 @@ class text:
 
     def feature_extraction(self):
         """
-        generate boolean features
-        :param tf_idf: to be continue...
+        generate boolean and word features
         :return:
         """
         features = []
@@ -118,6 +119,7 @@ class text:
             features.append(True)
         else:
             features.append(False)
+        # print(features)
 
         features.append(False)
         features.append(False)
@@ -187,15 +189,15 @@ def score(predict, gold):
 
     f_score = []
     for p, r in zip(precision, recall):
-        f_score.append(2 * p * r /( p + r ))
+        f_score.append(2 * p * r / (p + r))
 
     score_dict = {
-        'TP':correct,
-        'FP':(numpy.array(col_sum(predict)) - numpy.array(correct)).tolist(),
-        'FN':(numpy.array(col_sum(gold)) - numpy.array(correct)).tolist(),
-        'Recall':recall,
-        'Precision':precision,
-        'F-score':f_score
+        'TP': correct,
+        'FP': (numpy.array(col_sum(predict)) - numpy.array(correct)).tolist(),
+        'FN': (numpy.array(col_sum(gold)) - numpy.array(correct)).tolist(),
+        'Recall': recall,
+        'Precision': precision,
+        'F-score': f_score
     }
     return score_dict
 

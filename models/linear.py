@@ -21,7 +21,9 @@ class L_classifier:
             vectors = []
             for inst in range(len(corpus.text)):
                 feature = corpus.text[inst].feature_extraction()
+                # print(feature)
                 vectors.append(feature2vector(feature, corpus.tf_idf))
+                # print(vector)
                 labels.append(corpus.gold[inst][label])
             self.w.append(perceptron(vectors, labels))
 
@@ -88,6 +90,7 @@ def perceptron(vectors, labels):
                 break
             flag = True
         count += 1
+    # print(w)
     return w
 
 
@@ -107,5 +110,6 @@ def feature2vector(feature, tf_idf):
             vector.append(-1)
     for word in tf_idf.keys():
         vector.append(0 * feature[3:].count(word))
+    # print(vector)
     return vector
 

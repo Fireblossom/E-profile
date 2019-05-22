@@ -13,10 +13,13 @@ def list_to_dict(lis):
             dic[elem] += 1
         else:
             dic[elem] = 1
+    # print(lis)
+    # print(dic)
     return dic
 
 
 def p_tc(dic, term, term_count, b):
+    # print((dic[term] + 1) / (term_count + b))
     return (dic[term] + 1) / (term_count + b)
 
 
@@ -101,6 +104,7 @@ class NB_classifier:
                    'negative_term': negative_term, 'p_lc_positive': p_lc_positive, 'p_lc_negative': p_lc_negative,
                    'lc_positive_term': lc_positive_term, 'lc_negative_term': lc_negative_term, 'lc_bins': lc_bins}
             self.model.append(dic)  # Training complete.
+            # print(dic)
 
     def predict(self, corpus):
         """
@@ -140,6 +144,8 @@ class NB_classifier:
                     predict_label.append(1)
                 else:
                     predict_label.append(0)
+                # print(cmap(self.model[i]['pc_positive'], p_tc_positive, p_lc_positive))
+                # print(cmap(self.model[i]['pc_negative'], p_tc_negative, p_lc_negative))
             predict_labels.append(predict_label)
             
         return predict_labels

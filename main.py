@@ -8,7 +8,7 @@ model = NB_classifier(8)
 model.train(train_corpus)
 # print(model.w[0])
 
-sentence = "They are perfectly happy to peddle an afterlife that doesn't actually exist."
+sentence = "I feel the greatest destroyer of peace today is 'Abortion',... Mother Teresa #SemST"
 # print(model.test_sentence(sentence, train_corpus.tf_idf))
 
 val_corpus = Corpus('val.csv')
