@@ -4,16 +4,16 @@ import models.tools.file_writer
 from models.tools.Corpus import Corpus
 
 train_corpus = Corpus('train.csv')
-model = NB_classifier(8)
+model = L_classifier(8)
 model.train(train_corpus)
 # print(model.w[0])
 
-sentence = "I feel the greatest destroyer of peace today is 'Abortion',... Mother Teresa #SemST"
+# sentence = "I feel the greatest destroyer of peace today is 'Abortion',... Mother Teresa #SemST"
 # print(model.test_sentence(sentence, train_corpus.tf_idf))
 
 val_corpus = Corpus('val.csv')
 # val_corpus.set_predict(model.predict(val_corpus, train_corpus.tf_idf))
-val_corpus.set_predict(model.predict(val_corpus))
+val_corpus.set_predict(model.predict(val_corpus, train_corpus.tf_idf))
 
 val_corpus.set_label_title(('Anger', 'Anticipation', 'Disgust', 'Fear', 'Joy', 'Sadness', 'Surprise', 'Trust'))
 eval_result = val_corpus.eval()

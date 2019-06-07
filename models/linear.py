@@ -104,12 +104,15 @@ def feature2vector(feature, tf_idf):
     """
     vector = []
     for elem in feature[:3]:
+        vector.append(elem)
+        '''
         if elem is True:
             vector.append(1)
         elif elem is False:
             vector.append(-1)
+            '''
     for word in tf_idf.keys():
         vector.append(0 * feature[3:].count(word))
     # print(vector)
-    return vector
+    return vector[:3]
 
