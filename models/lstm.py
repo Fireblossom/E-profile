@@ -3,6 +3,7 @@ import numpy as np
 import os
 import datetime as dt
 from keras.callbacks import EarlyStopping, ModelCheckpoint
+from models.tools.on_lstm_layer import ONLSTM
 
 
 class LSTMModel(object):
@@ -24,10 +25,13 @@ class LSTMModel(object):
         self.model.add(keras.layers.Dense(1, activation='sigmoid'))
         '''
         vocab_size = 90000
-        self.model.add(keras.layers.Embedding(vocab_size, 16))
-        self.model.add(keras.layers.GlobalAveragePooling1D())
-        self.model.add(keras.layers.Dense(16, activation='relu'))
+        self.model.add(keras.layers.Embedding(vocab_size, 64))
+        # self.model.add(keras.layers.GlobalAveragePooling1D())
+        self.model.add(ONLSTM(64, 16, return_sequences=True, dropconnect=0.25))
+        self.model.add(ONLSTM(64, 16, return_sequences=False, dropconnect=0.25))
+        # self.model.add(keras.layers.Dense(16, activation='relu'))
         self.model.add(keras.layers.Dense(1, activation='sigmoid'))
+
         self.model.compile(optimizer=keras.optimizers.Adam(),
                            loss=keras.losses.binary_crossentropy,
                            metrics=['accuracy'])
@@ -162,7 +166,7 @@ def res_prep(raw_result):
 if __name__ == "__main__":
     print("Start")
     CONF = dict(veclen=300,
-                maxlen=50
+                maxlen=64
                 )
     model = LSTMModel()
     model.build_model(CONF)
@@ -172,7 +176,10 @@ if __name__ == "__main__":
     from models.tools.Corpus import Corpus
 
     train_corpus = Corpus('../../train.csv')
-    #model.train(train_corpus, 50, wordvec, 50, 64)
+
+    imdb = keras.datasets.imdb
+    word_index = imdb.get_word_index()
+    model.train(train_corpus, CONF['maxlen'], word_index, 50, 64)
     val_corpus = Corpus('../../val.csv')
 
     #result = model.predict(val_corpus, 50, wordvec, 'train')
