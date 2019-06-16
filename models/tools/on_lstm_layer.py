@@ -106,3 +106,11 @@ class ONLSTM(Layer):
             return (input_shape[0], input_shape[1], self.units)
         else:
             return (input_shape[0], self.units)
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({
+            'units': self.units,
+            'levels': self.levels,
+        })
+        return config

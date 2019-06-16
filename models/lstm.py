@@ -12,9 +12,9 @@ class LSTMModel(object):
 
     def load_model(self, filepath):
         print('[Model] Loading model from file %s' % filepath)
-        return keras.models.load_model(filepath)
+        return keras.models.load_model(filepath, custom_objects={'ONLSTM': ONLSTM})
 
-    def build_model(self, configs):
+    def build_model(self, config):
         '''
         self.model.add(keras.layers.LSTM(100, input_shape=(configs['maxlen'], configs['veclen']), return_sequences=True))
         self.model.add(keras.layers.Dropout(0.8))
@@ -24,12 +24,16 @@ class LSTMModel(object):
         self.model.add(keras.layers.Dense(16, activation='relu'))
         self.model.add(keras.layers.Dense(1, activation='sigmoid'))
         '''
-        vocab_size = 90000
-        self.model.add(keras.layers.Embedding(vocab_size, 64))
-        # self.model.add(keras.layers.GlobalAveragePooling1D())
-        self.model.add(ONLSTM(64, 16, return_sequences=True, dropconnect=0.25))
-        self.model.add(ONLSTM(64, 16, return_sequences=False, dropconnect=0.25))
-        # self.model.add(keras.layers.Dense(16, activation='relu'))
+        self.model.add(keras.layers.Embedding(input_dim=len(config['word_index']),
+                                              output_dim=config['veclen'],
+                                              weights=[config['embedding_matrix']],
+                                              input_length=config['maxlen'],
+                                              trainable=False))
+        # self.model.add(ONLSTM(300, 10, return_sequences=True, dropconnect=0.25))
+        # self.model.add(keras.layers.Dropout(0.8))
+        self.model.add(ONLSTM(300, 30, return_sequences=False, dropconnect=0.25))
+        self.model.add(keras.layers.Dropout(0.8))
+        self.model.add(keras.layers.Dense(16, activation='relu'))
         self.model.add(keras.layers.Dense(1, activation='sigmoid'))
 
         self.model.compile(optimizer=keras.optimizers.Adam(),
@@ -44,6 +48,7 @@ class LSTMModel(object):
                                                                 value=0,
                                                                 padding='post',
                                                                 maxlen=maxlen)
+        print(x)
 
         for i in range(8):
             save_fname = os.path.join(save_dir, str(i), '%s-e%s.h5' % (dt.datetime.now().strftime('%d%m%Y-%H%M%S'),
@@ -79,6 +84,7 @@ class LSTMModel(object):
         for i in range(8):
             model_path = new_file(model_filepath + '/' + str(i))
             pred_model = self.load_model(model_path)
+            pred_model._make_predict_function()
             col = pred_model.predict(x)
             pred.append(col)
         return pred
@@ -86,12 +92,8 @@ class LSTMModel(object):
 
 def prep_x(corpus, word_dict):
     x = []
-    ###
-    imdb = keras.datasets.imdb
-    word_index = imdb.get_word_index()
-    # Use word_dict later
     # The first indices are reserved
-    word_index = {k: (v + 3) for k, v in word_index.items()}
+    word_index = {k: (v + 3) for k, v in word_dict.items()}
     word_index["<PAD>"] = 0
     word_index["<START>"] = 1
     word_index["<UNK>"] = 2  # unknown
@@ -147,6 +149,8 @@ def new_file(dir):
     list = os.listdir(dir)
     list.sort(key=lambda fn: os.path.getmtime(dir + '/' + fn))
     filepath = os.path.join(dir, list[-1])
+    if filepath[-9:] == '.DS_Store':
+        filepath = os.path.join(dir, list[-2])
     return filepath
 
 
@@ -163,29 +167,3 @@ def res_prep(raw_result):
     return list(map(list, zip(*result)))
 
 
-if __name__ == "__main__":
-    print("Start")
-    CONF = dict(veclen=300,
-                maxlen=64
-                )
-    model = LSTMModel()
-    model.build_model(CONF)
-    model.model.summary()
-    wordemb, vecmat = load_vector('word_embedding_300_new.txt')
-
-    from models.tools.Corpus import Corpus
-
-    train_corpus = Corpus('../../train.csv')
-
-    imdb = keras.datasets.imdb
-    word_index = imdb.get_word_index()
-    model.train(train_corpus, CONF['maxlen'], word_index, 50, 64)
-    val_corpus = Corpus('../../val.csv')
-
-    #result = model.predict(val_corpus, 50, wordvec, 'train')
-    #print(res_prep(result))
-    #val_corpus.set_predict(res_prep(result))
-    #val_corpus.set_label_title(('Anger', 'Anticipation', 'Disgust', 'Fear', 'Joy', 'Sadness', 'Surprise', 'Trust'))
-    print(val_corpus.eval())
-
-    print("OK")
