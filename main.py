@@ -1,11 +1,14 @@
-import models.naive_bayes
-import eval
+from linear import L_classifier
+from corpus import Corpus
 
-file_obj = open('train.csv', 'r')
-model = models.naive_bayes.NB_classifier(8)
-model.train(file_obj)
-# Prototype with ugly coding ...
-print(model.predict('happy'))
+train_corpus = Corpus('train.csv')
+model = L_classifier(8)
+print('Begin training.')
+model.train(train_corpus)
 
-eval_obj = eval.Eval('predict.csv', 'gold.csv')
-print(eval_obj.get_score())
+val_corpus = Corpus('val.csv')
+val_corpus.set_predict(model.predict(val_corpus, train_corpus.tf_idf))
+
+val_corpus.set_label_title(('Anger', 'Anticipation', 'Disgust', 'Fear', 'Joy', 'Sadness', 'Surprise', 'Trust'))
+eval_result = val_corpus.eval()
+print(eval_result)
