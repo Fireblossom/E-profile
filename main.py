@@ -2,13 +2,15 @@ from linear import L_classifier
 from corpus import Corpus
 import find_false
 
+#Set your dicts here.
+
 train_corpus = Corpus('train.csv')
 model = L_classifier(8)
 print('Begin training.')
-model.train(train_corpus)
+model.train(train_corpus, dicts)
 
 val_corpus = Corpus('val.csv')
-val_corpus.set_predict(model.predict(val_corpus, train_corpus.tf_idf))
+val_corpus.set_predict(model.predict(val_corpus, train_corpus.tf_idf, dicts))
 
 val_corpus.set_label_title(('Anger', 'Anticipation', 'Disgust', 'Fear', 'Joy', 'Sadness', 'Surprise', 'Trust'))
 eval_result = val_corpus.eval()

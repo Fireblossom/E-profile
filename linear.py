@@ -10,7 +10,7 @@ class L_classifier:
         self.labels = labels
         self.w = []
 
-    def train(self, corpus):
+    def train(self, corpus, dicts):
         """
         read corpus, generate features and convert features to vector, then train the hyperplane w.
         :param corpus:
@@ -20,14 +20,14 @@ class L_classifier:
             labels = []
             vectors = []
             for index in range(len(corpus.text)):
-                feature = corpus.text[index].feature_extraction()
+                feature = corpus.text[index].feature_extraction(dicts)
                 # print(feature)
                 vectors.append(feature2vector(feature, corpus.tf_idf))
                 # print(vector)
                 labels.append(corpus.gold[index][label])
             self.w.append(perceptron(vectors, labels))
 
-    def predict(self, corpus, tf_idf):
+    def predict(self, corpus, tf_idf, dicts):
         """
         read corpus, making predict using the trained w, return labels for all instance in corpus.
         :param corpus:
@@ -38,7 +38,7 @@ class L_classifier:
         for inst in range(len(corpus.text)):
             labels = []
             for label in range(self.labels):
-                if dot(self.w[label], feature2vector(corpus.text[inst].feature_extraction(), tf_idf)) >= 0:
+                if dot(self.w[label], feature2vector(corpus.text[inst].feature_extraction(dicts), tf_idf)) >= 0:
                     labels.append(1)
                 else:
                     labels.append(0)
