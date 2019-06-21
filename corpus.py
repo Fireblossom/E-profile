@@ -104,18 +104,29 @@ class text:
         self.words = [x[0] for x in words]
         self.pos_tags = [x[1] for x in words]
 
-    def feature_extraction(self, dicts):
+    def feature_extraction(self):
         """
         generate boolean and word features
         :return:
         """
-        features = [False] * len(dicts)
+        features = []
+        jjs = 0
+        for tags in self.pos_tags:
+            if tags in WANT_TAGS:
+                jjs += 1
+        if jjs >= 3:
+            features.append(True)
+        else:
+            features.append(False)
+        # print(features)
+
+        features.append(False)
+        features.append(False)
         for word in self.words:
-            for i in range(len(dicts)):
-                if word not in dicts:
-                    continue
-                elif dicts[word] != 0:
-                    features[i] = True
+            if word in POS_ADJ:
+                features[1] = True
+            elif word in NEG_ADJ:  # 现在就3个feature：有没有3个以上形容词，有没有POS_ADJ，有没有NEG_ADJ
+                features[2] = True  # Do your work here.
         '''
         e.g.
         dicts = dict_generator('feature')
