@@ -1,8 +1,9 @@
 from linear import L_classifier
 from corpus import Corpus
 import find_false
+from corpus import dict_generator
 
-#Set your dicts here.
+dicts = dict_generator('features')
 
 train_corpus = Corpus('train.csv')
 model = L_classifier(8)
