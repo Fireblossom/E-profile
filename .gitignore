@@ -108,3 +108,6 @@ venv.bak/
 .DS_Store
 train.csv
 val.csv
+*.txt
+*.csv
+*.h5
