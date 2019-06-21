@@ -113,7 +113,7 @@ class text:
         jjs = 0
         for tags in self.pos_tags:
             if tags in WANT_TAGS:
-                jjs += 0
+                jjs += 1
         if jjs >= 3:
             features.append(True)
         else:
