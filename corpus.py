@@ -140,10 +140,11 @@ def dict_generator(path):
     filenames = os.walk(path)
     dicts = []
     for name in list(filenames)[0][2]:
-        with open(name) as file:
+        with open(path + '/' + name) as file:
             d = {}
             for line in file:
-                elem = line.split()
+                elem = line.split('\t')
+                # print(elem)
                 d[elem[0]] = int(elem[1])
             dicts.append(d)
     return dicts
