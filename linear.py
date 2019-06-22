@@ -77,20 +77,20 @@ def perceptron(vectors, labels):
     w = np.array([0.0] * len(vectors[0]))
     flag = False
     count = 0
-    while not flag and count < 500:
+    while not flag and count < 100:
         for i in range(len(vectors)):
             t = dot(vectors[i], w)
             if t <= 0 and labels[i] == 1:
-                w += vectors[i]
+                w = w + np.array(vectors[i]) * 0.3
                 flag = False
-                break
-            if t >= 0 and labels[i] == 0:
-                w -= vectors[i]
+                continue
+            elif t >= 0 and labels[i] == 0:
+                w = w - np.array(vectors[i]) * 0.3
                 flag = False
-                break
+                continue
             flag = True
         count += 1
-    # print(w)
+        # print(w)
     return w
 
 
@@ -106,9 +106,11 @@ def feature2vector(feature, tf_idf):
     vector = []
     for elem in feature:
         if elem is True:
-            vector.append(1)
+            vector.append(1.0)
         elif elem is False:
-            vector.append(-1)
+            vector.append(-1.0)
+        elif type(elem) == int:
+            vector.append(float(elem))
         else:
             break
     # for word in tf_idf.keys():

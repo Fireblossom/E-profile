@@ -112,22 +112,13 @@ class text:
         features = [False] * len(dicts)
         for word in self.words:
             for i in range(len(dicts)):
-                if word not in dicts:
+                if word not in dicts[i]:
                     continue
-                elif dicts[word] != 0:
+                elif dicts[i][word] != 0:
                     features[i] = True
-        '''
-        e.g.
-        dicts = dict_generator('feature')
-        features += [False] * len(dicts)
-        for word in self.words:
-            for dic in range(len(dicts)):
-                if word in dicts[dic]:
-                    features[dic + 3] = True
-        根据总结出来的文件读取独现词/共现词进字典，生成等于字典个数的false，等待生成vector
-        然后把句子里每个词都拿出来看在不在字典里
-        在的话把对应位置的False改成True
-        '''
+                    # features[i] += dicts[i][word]
+                    # print(dicts[i][word])
+        #print(features)
         return features
 
 

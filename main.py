@@ -9,6 +9,7 @@ train_corpus = Corpus('train.csv')
 model = L_classifier(8)
 print('Begin training.')
 model.train(train_corpus, dicts)
+print(model.w[0])
 
 val_corpus = Corpus('val.csv')
 val_corpus.set_predict(model.predict(val_corpus, train_corpus.tf_idf, dicts))
@@ -17,4 +18,4 @@ val_corpus.set_label_title(('Anger', 'Anticipation', 'Disgust', 'Fear', 'Joy', '
 eval_result = val_corpus.eval()
 print(eval_result)
 
-print(find_false.find_fp(val_corpus))
+# print(find_false.find_fp(val_corpus))
