@@ -6,6 +6,7 @@ from prettytable import PrettyTable
 import nltk
 import math
 import string
+import os
 
 
 class Corpus:
@@ -114,7 +115,7 @@ class text:
         jjs = 0
         for tags in self.pos_tags:
             if tags in WANT_TAGS:
-                jjs += 0
+                jjs += 1
         if jjs >= 3:
             features.append(True)
         else:
@@ -130,6 +131,25 @@ class text:
                 features[2] = True
             features.append(word)
         return features
+
+
+def dict_generator(path):
+    """
+    May useful.
+    :param path:
+    :return:
+    """
+    filenames = os.walk(path)
+    dicts = []
+    for name in list(filenames)[0][2]:
+        with open(path + '/' + name) as file:
+            d = {}
+            for line in file:
+                elem = line.split('\t')
+                # print(elem)
+                d[elem[0]] = int(elem[1])
+            dicts.append(d)
+    return dicts
 
 
 def normalization(tokens):

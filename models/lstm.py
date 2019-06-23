@@ -46,14 +46,15 @@ class LSTMModel(object):
                            loss=keras.losses.binary_crossentropy,
                            metrics=['accuracy'])
         '''
-        main_input = Input(shape=(64,), dtype='int32', name='main_input')
-        x = Embedding(input_dim=5000,
-                      output_dim=300,
-                      # weights=[config['embedding_matrix']],
-                      input_length=64,
+        main_input = Input(shape=(config['maxlen'],), dtype='int32', name='main_input')
+        x = Embedding(input_dim=len(config['word_index']),
+                      output_dim=config['veclen'],
+                      weights=[config['embedding_matrix']],
+                      input_length=config['maxlen'],
                       trainable=False)(main_input)
         x = Bidirectional(ONLSTM(units=64, chunk_size=4, return_sequences=True))(x)
-        lstm_out = Bidirectional(ONLSTM(units=64, chunk_size=4))(x)
+        x = Bidirectional(ONLSTM(units=64, chunk_size=4))(x)
+        # lstm_out = Bidirectional(ONLSTM(units=64, chunk_size=4))(x)
 
         # feature_input = Input(shape=(5,), name='feature_input')
         # x = keras.layers.concatenate([lstm_out, feature_input])
@@ -118,7 +119,7 @@ class LSTMModel(object):
             '''
         save_fname = os.path.join(save_dir, '%s-e%s.h5' % (dt.datetime.now().strftime('%d%m%Y-%H%M%S'), str(epochs)))
         try:
-            os.mkdir(save_dir + str(i) + '/')
+            os.mkdir(save_dir)
         except FileExistsError:
             pass
         callbacks = [
@@ -157,8 +158,6 @@ class LSTMModel(object):
         pred_model = self.load_model(model_path)
         pred_model._make_predict_function()
         return res_prep(pred_model.predict(x))
-
-
 
 
 def prep_x(corpus, word_dict):
