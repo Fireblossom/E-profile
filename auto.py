@@ -1,16 +1,15 @@
-import subprocess
 import time
 import os
 import tensorflow as tf
-
-while True:
-    pipe = subprocess.Popen("~/gpu-util", shell=True, stdout=subprocess.PIPE)
-    content = pipe.communicate()
-    ret = content[0].decode('utf-8').split('\n')
+flag = True
+while flag:
+    os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
+    memory_gpu = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
     i = 0
-    for line in ret:
-        usage = int(line[41:-1])
-        if usage <= 10:
+    for usage in memory_gpu:
+        print(usage)
+        if usage > 5000:
+            flag = False
             os.environ["CUDA_VISIBLE_DEVICES"] = str(i)
             from keras.backend.tensorflow_backend import set_session
             config = tf.ConfigProto()
@@ -18,7 +17,7 @@ while True:
             set_session(tf.Session(config=config))
             import lstm_try
             lstm_try.run()
-            break
         i += 1
+    os.system('rm tmp')
 
     time.sleep(30)

@@ -3,9 +3,8 @@ import numpy as np
 import os
 import datetime as dt
 from keras.callbacks import EarlyStopping, ModelCheckpoint
-from keras.layers import Embedding, Bidirectional, Dense, Input
+from keras.layers import Embedding, Bidirectional, Dense, Input, LSTM
 from keras.models import Model
-# from models.tools.on_lstm_layer import ONLSTM
 from keras_ordered_neurons import ONLSTM
 
 
@@ -52,36 +51,20 @@ class LSTMModel(object):
                       weights=[config['embedding_matrix']],
                       input_length=config['maxlen'],
                       trainable=False)(main_input)
-        x = Bidirectional(ONLSTM(units=64, chunk_size=4, return_sequences=True))(x)
-        x = Bidirectional(ONLSTM(units=64, chunk_size=4))(x)
+        x = Bidirectional(ONLSTM(units=64, chunk_size=8, return_sequences=True, recurrent_dropconnect=0.25))(x)
+        x = Bidirectional(ONLSTM(units=64, chunk_size=8, recurrent_dropconnect=0.25))(x)
         # lstm_out = Bidirectional(ONLSTM(units=64, chunk_size=4))(x)
 
         # feature_input = Input(shape=(5,), name='feature_input')
         # x = keras.layers.concatenate([lstm_out, feature_input])
 
-        x_1 = Dense(units=16, activation='sigmoid')(x)
-        x_2 = Dense(units=16, activation='sigmoid')(x)
-        x_3 = Dense(units=16, activation='sigmoid')(x)
-        x_4 = Dense(units=16, activation='sigmoid')(x)
-        x_5 = Dense(units=16, activation='sigmoid')(x)
-        x_6 = Dense(units=16, activation='sigmoid')(x)
-        x_7 = Dense(units=16, activation='sigmoid')(x)
-        x_8 = Dense(units=16, activation='sigmoid')(x)
+        x_1 = Dense(units=32, activation='relu')(x)
 
         main_output_1 = Dense(units=1, activation='sigmoid')(x_1)
-        main_output_2 = Dense(units=1, activation='sigmoid')(x_2)
-        main_output_3 = Dense(units=1, activation='sigmoid')(x_3)
-        main_output_4 = Dense(units=1, activation='sigmoid')(x_4)
-        main_output_5 = Dense(units=1, activation='sigmoid')(x_5)
-        main_output_6 = Dense(units=1, activation='sigmoid')(x_6)
-        main_output_7 = Dense(units=1, activation='sigmoid')(x_7)
-        main_output_8 = Dense(units=1, activation='sigmoid')(x_8)
 
         self.model = Model(inputs=main_input,  # [main_input, feature_input],
-                           outputs=[main_output_1, main_output_2, main_output_3, main_output_4,
-                                    main_output_5, main_output_6, main_output_7, main_output_8])
-        self.model.compile(optimizer='adam', loss=keras.losses.binary_crossentropy)
-        self.model.summary()
+                           outputs=main_output_1)
+        self.model.compile(optimizer='adam', loss=keras.losses.binary_crossentropy, metrics=['accuracy'])
 
     def train(self, corpus, maxlen, word_dict, epochs, batch_size, save_dir='train/'):
         print('[Model] Training Started')
@@ -91,8 +74,7 @@ class LSTMModel(object):
                                                        value=0,
                                                        padding='post',
                                                        maxlen=maxlen)
-        print(x)
-        '''
+
         for i in range(8):
             save_fname = os.path.join(save_dir, str(i), '%s-e%s.h5' % (dt.datetime.now().strftime('%d%m%Y-%H%M%S'),
                                                                        str(epochs)))
@@ -134,7 +116,7 @@ class LSTMModel(object):
             callbacks=callbacks
         )
         self.model.save(save_fname)
-
+    '''
         print('[Model] All Training Completed.')
 
     def predict(self, corpus, maxlen, word_dict, model_filepath):
@@ -144,7 +126,7 @@ class LSTMModel(object):
                                                        padding='post',
                                                        maxlen=maxlen)
 
-        '''
+
         pred = []
         for i in range(8):
             model_path = new_file(model_filepath + '/' + str(i))
@@ -153,11 +135,13 @@ class LSTMModel(object):
             col = pred_model.predict(x)
             pred.append(col)
         return res_prep(pred)
+
         '''
         model_path = new_file(model_filepath)
         pred_model = self.load_model(model_path)
         pred_model._make_predict_function()
         return res_prep(pred_model.predict(x))
+        '''
 
 
 def prep_x(corpus, word_dict):

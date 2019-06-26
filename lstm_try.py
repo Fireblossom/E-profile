@@ -13,14 +13,15 @@ def run():
                 maxlen=64,
                 word_index=wordemb,
                 embedding_matrix=embedding
+                # syntax_features=
                 )
     model = LSTMModel()
     model.build_model(CONF)
     model.model.summary()
 
-    train_corpus = Corpus('train.csv')
+    #train_corpus = Corpus('train.csv')
 
-    model.train(train_corpus, CONF['maxlen'], wordemb, 100, 64)
+    #model.train(train_corpus, CONF['maxlen'], wordemb, 100, 64)
     val_corpus = Corpus('val.csv')
 
     result = model.predict(val_corpus, CONF['maxlen'], wordemb, 'train')
@@ -46,4 +47,3 @@ def merge_embdding(wordemb, vecmat):
     new_vecmat = np.column_stack([vecmat, features])
     return new_vecmat
 
-run()
