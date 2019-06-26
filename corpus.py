@@ -111,6 +111,7 @@ class text:
         """
         features = [False] * len(dicts)
         for word in self.words:
+            features.append(word)
             for i in range(len(dicts)):
                 if word not in dicts[i]:
                     continue
@@ -132,12 +133,13 @@ def dict_generator(path):
     dicts = []
     for name in list(filenames)[0][2]:
         with open(path + '/' + name) as file:
-            d = {}
-            for line in file:
-                elem = line.split('\t')
-                # print(elem)
-                d[elem[0]] = int(elem[1])
-            dicts.append(d)
+            if name != '.DS_Store':
+                d = {}
+                for line in file:
+                    elem = line.split('\t')
+                    # print(elem)
+                    d[elem[0]] = int(elem[1])
+                dicts.append(d)
     return dicts
 
 

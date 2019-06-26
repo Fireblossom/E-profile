@@ -1,4 +1,4 @@
-def find_fp(corpus):
+def find_fp(corpus, k):
     """
     返回8个列表，每个列表里是对应标签FP所有的词，可以用Counter快捷计算词频
     :param corpus:
@@ -13,10 +13,10 @@ def find_fp(corpus):
     for j in range(len(idx)):
         for i in idx[j]:
             texts[j] += corpus.text[i].words
-    return texts
+    return texts[k]
 
 
-def find_fn(corpus):
+def find_fn(corpus, k):
     idx = [[]] * 8
     for i in range(len(corpus.gold)):
         for j in range(len(corpus.gold[0])):
@@ -26,4 +26,4 @@ def find_fn(corpus):
     for j in range(len(idx)):
         for i in idx[j]:
             texts[j] += corpus.text[i].words
-    return texts
+    return texts[k]

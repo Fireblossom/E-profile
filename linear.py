@@ -113,8 +113,8 @@ def feature2vector(feature, tf_idf):
             vector.append(float(elem))
         else:
             break
-    # for word in tf_idf.keys():
-        # vector.append(tf_idf[word] * feature.count(word))
+    for word in tf_idf.keys():
+        vector.append(tf_idf[word] * feature.count(word))
     # print(vector)
     return vector
 
