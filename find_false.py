@@ -12,7 +12,7 @@ def find_fp(corpus, k):
     texts = [[]] * 8
     for j in range(len(idx)):
         for i in idx[j]:
-            texts[j] += corpus.text[i].words
+            texts[j].append(corpus.text[i].words)
     return texts[k]
 
 
@@ -25,5 +25,5 @@ def find_fn(corpus, k):
     texts = [[]] * 8
     for j in range(len(idx)):
         for i in idx[j]:
-            texts[j] += corpus.text[i].words
+            texts[j].append(corpus.text[i].words)
     return texts[k]
