@@ -1,4 +1,3 @@
-import models.tools.Stemming
 from nltk.corpus import stopwords
 import models.tools.gen_label
 from nltk.tokenize import TweetTokenizer
@@ -18,15 +17,17 @@ class Corpus:
         """
         self.label_title = []
         with open(filename) as file:
-            self.text, self.gold, self.pred = [], [], []
+            self.text, self.gold, self.pred, self.sentence, self.pos = [], [], [], [], []
             self.document_count = 0
-            tknzr = TweetTokenizer(strip_handles=True, reduce_len=True)
+            tknzr = TweetTokenizer(strip_handles=True)
             for line in file:
                 if line != 'XXXXXXXXXXXX EMPTY ANNOTATION\n':
                     self.document_count += 1
                     self.gold.append(models.tools.gen_label.gen_label(line))
                     content = line.split('\t')
+                    self.sentence.append(content[-1])
                     tokens = tknzr.tokenize(content[-1])
+                    self.pos.append(list(t[1] for t in nltk.pos_tag(tokens)))
                     self.text.append(text(normalization(tokens)))
         self.tf_idf = self.tfidf()
 
@@ -106,30 +107,20 @@ class text:
         self.words = [x[0] for x in words]
         self.pos_tags = [x[1] for x in words]
 
-    def feature_extraction(self):
+    def feature_extraction(self, dicts):
         """
         generate boolean and word features
         :return:
         """
-        features = []
-        jjs = 0
-        for tags in self.pos_tags:
-            if tags in WANT_TAGS:
-                jjs += 1
-        if jjs >= 3:
-            features.append(True)
-        else:
-            features.append(False)
-        # print(features)
-
-        features.append(False)
-        features.append(False)
+        features = [False] * len(dicts)
         for word in self.words:
-            if word in POS_ADJ:
-                features[1] = True
-            elif word in NEG_ADJ:
-                features[2] = True
             features.append(word)
+            for i in range(len(dicts)):
+                if word not in dicts[i]:
+                    continue
+                elif dicts[i][word] != 0:
+                    features[i] = dicts[i][word]
+        #print(features)
         return features
 
 
@@ -151,6 +142,20 @@ def dict_generator(path):
                     d[elem[0]] = int(elem[1])
                 dicts.append(d)
     return dicts
+
+
+def set_generator(path):
+    filenames = os.walk(path)
+    sets = []
+    for name in list(filenames)[0][2]:
+        if name != '.DS_Store':
+            with open(path + '/' + name) as file:
+                s = set()
+                for line in file:
+                    elem = line[:-1].upper().split(' ')
+                    s.add(tuple(elem))
+                sets.append(s)
+    return sets
 
 
 def normalization(tokens):

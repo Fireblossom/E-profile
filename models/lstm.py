@@ -1,50 +1,24 @@
+import math
 import keras
 import numpy as np
 import os
 import datetime as dt
 from keras.callbacks import EarlyStopping, ModelCheckpoint
-from keras.layers import Embedding, Bidirectional, Dense, Input, LSTM
+from keras.layers import Embedding, Bidirectional, Dense, Input, Dropout, CuDNNLSTM
 from keras.models import Model
 from keras_ordered_neurons import ONLSTM
+from models.tools.Corpus import dict_generator, set_generator
 
 
 class LSTMModel(object):
     def __init__(self):
-        self.model = Model()  # keras.models.Sequential()
+        self.model = Model()
 
     def load_model(self, filepath):
         print('[Model] Loading model from file %s' % filepath)
         return keras.models.load_model(filepath, custom_objects={'ONLSTM': ONLSTM})
 
     def build_model(self, config):
-        '''
-        self.model.add(keras.layers.LSTM(100, input_shape=(configs['maxlen'], configs['veclen']), return_sequences=True))
-        self.model.add(keras.layers.Dropout(0.8))
-        self.model.add(keras.layers.LSTM(100, return_sequences=True))
-        self.model.add(keras.layers.LSTM(100, return_sequences=False))
-        self.model.add(keras.layers.Dropout(0.8))
-        self.model.add(keras.layers.Dense(16, activation='relu'))
-        self.model.add(keras.layers.Dense(1, activation='sigmoid'))
-
-        self.model.add(keras.layers.Embedding(input_dim=len(config['word_index']),
-                                              output_dim=config['veclen'],
-                                              weights=[config['embedding_matrix']],
-                                              input_length=config['maxlen'],
-                                              trainable=False))
-        self.model.add(keras.layers.Bidirectional(ONLSTM(units=64,
-                                                         chunk_size=4,
-                                                         return_sequences=True,
-                                                         recurrent_dropconnect=0.25)))
-        self.model.add(keras.layers.Bidirectional(ONLSTM(units=64,
-                                                         chunk_size=4,
-                                                         return_sequences=False,
-                                                         recurrent_dropconnect=0.25)))
-        self.model.add(keras.layers.Dense(units=16, activation='relu'))
-        self.model.add(keras.layers.Dense(units=1, activation='sigmoid'))
-        self.model.compile(optimizer=keras.optimizers.Adam(),
-                           loss=keras.losses.binary_crossentropy,
-                           metrics=['accuracy'])
-        '''
         main_input = Input(shape=(config['maxlen'],), dtype='int32', name='main_input')
         x = Embedding(input_dim=len(config['word_index']),
                       output_dim=config['veclen'],
@@ -52,28 +26,32 @@ class LSTMModel(object):
                       input_length=config['maxlen'],
                       trainable=False)(main_input)
         x = Bidirectional(ONLSTM(units=64, chunk_size=8, return_sequences=True, recurrent_dropconnect=0.25))(x)
+        # x = Bidirectional(CuDNNLSTM(units=64, return_sequences=True))(x)
+        x = Dropout(0.2)(x)
         x = Bidirectional(ONLSTM(units=64, chunk_size=8, recurrent_dropconnect=0.25))(x)
+        # x = Bidirectional(CuDNNLSTM(units=64))(x)
+        lstm_out = Dropout(0.2)(x)
         # lstm_out = Bidirectional(ONLSTM(units=64, chunk_size=4))(x)
 
-        # feature_input = Input(shape=(5,), name='feature_input')
-        # x = keras.layers.concatenate([lstm_out, feature_input])
+        feature_input = Input(shape=(len(config['syntax_features'][0]),), name='feature_input')
+        x = keras.layers.concatenate([lstm_out, feature_input])
 
         x_1 = Dense(units=32, activation='relu')(x)
 
         main_output_1 = Dense(units=1, activation='sigmoid')(x_1)
 
-        self.model = Model(inputs=main_input,  # [main_input, feature_input],
+        self.model = Model(inputs=[main_input, feature_input],
                            outputs=main_output_1)
         self.model.compile(optimizer='adam', loss=keras.losses.binary_crossentropy, metrics=['accuracy'])
 
-    def train(self, corpus, maxlen, word_dict, epochs, batch_size, save_dir='train/'):
+    def train(self, corpus, config, epochs, batch_size, save_dir='train/'):
         print('[Model] Training Started')
         print('[Model] %s epochs, %s batch size' % (epochs, batch_size))
-        train_data = prep_x(corpus, word_dict)
+        train_data = prep_x(corpus, config['word_index'])
         x = keras.preprocessing.sequence.pad_sequences(train_data,
                                                        value=0,
                                                        padding='post',
-                                                       maxlen=maxlen)
+                                                       maxlen=config['maxlen'])
 
         for i in range(8):
             save_fname = os.path.join(save_dir, str(i), '%s-e%s.h5' % (dt.datetime.now().strftime('%d%m%Y-%H%M%S'),
@@ -89,7 +67,7 @@ class LSTMModel(object):
             ]
             self.model.reset_states()
             self.model.fit(
-                x,
+                [x, config['syntax_features']],
                 prep_y(corpus, i),
                 epochs=epochs,
                 batch_size=batch_size,
@@ -98,50 +76,23 @@ class LSTMModel(object):
             self.model.save(save_fname)
             
             print('[Model] Training Completed. Model saved as %s' % save_fname)
-            '''
-        save_fname = os.path.join(save_dir, '%s-e%s.h5' % (dt.datetime.now().strftime('%d%m%Y-%H%M%S'), str(epochs)))
-        try:
-            os.mkdir(save_dir)
-        except FileExistsError:
-            pass
-        callbacks = [
-            EarlyStopping(monitor='val_loss', patience=2),
-            ModelCheckpoint(filepath=save_fname, monitor='val_loss', save_best_only=True)
-        ]
-        self.model.fit(
-            x,
-            prep_y(corpus),
-            epochs=epochs,
-            batch_size=batch_size,
-            callbacks=callbacks
-        )
-        self.model.save(save_fname)
-    '''
         print('[Model] All Training Completed.')
 
-    def predict(self, corpus, maxlen, word_dict, model_filepath):
-        train_data = prep_x(corpus, word_dict)
+    def predict(self, corpus, config, model_filepath):
+        train_data = prep_x(corpus, config['word_index'])
         x = keras.preprocessing.sequence.pad_sequences(train_data,
                                                        value=0,
                                                        padding='post',
-                                                       maxlen=maxlen)
-
+                                                       maxlen=config['maxlen'])
 
         pred = []
         for i in range(8):
             model_path = new_file(model_filepath + '/' + str(i))
             pred_model = self.load_model(model_path)
             pred_model._make_predict_function()
-            col = pred_model.predict(x)
+            col = pred_model.predict([x, config['syntax_features']])
             pred.append(col)
         return res_prep(pred)
-
-        '''
-        model_path = new_file(model_filepath)
-        pred_model = self.load_model(model_path)
-        pred_model._make_predict_function()
-        return res_prep(pred_model.predict(x))
-        '''
 
 
 def prep_x(corpus, word_dict):
@@ -234,3 +185,42 @@ def res_prep(raw_result):
                 re_row.append(0)
         result.append(re_row)
     return list(map(list, zip(*result)))
+
+
+def merge_embdding(wordemb, vecmat, path='features'):
+    dicts = dict_generator(path)
+    features = np.zeros((vecmat.shape[0], len(dicts)))
+    for word in wordemb:
+        for i in range(len(dicts)):
+            if word not in dicts[i]:
+                features[wordemb[word]][i] = -1
+            elif dicts[i][word] == 0:
+                features[wordemb[word]][i] = -1
+            elif dicts[i][word] > 0:
+                features[wordemb[word]][i] = math.log(dicts[i][word])
+    new_vecmat = np.column_stack([vecmat, features])
+    return new_vecmat
+
+
+def syntax_features(corpus, path='syntax'):
+    def subsequences(lst):
+        re = set()
+        for l in range(3, 8):
+            if l > len(lst):
+                break
+            for i in range(len(lst) - l):
+                re.add(tuple(lst[i:i + l]))
+        return re
+    sets = set_generator(path)
+    features = np.zeros((len(corpus.text), len(sets)))
+    j = 0
+    for sentence in corpus.pos:
+        for i in range(len(sets)):
+            if len(subsequences(sentence).intersection(sets[i])) != 0:
+                features[j][i] = math.log2(len(subsequences(sentence).intersection(sets[i])))
+            else:
+                features[j][i] = -1
+        j += 1
+    return features
+
+
