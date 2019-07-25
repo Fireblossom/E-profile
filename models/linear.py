@@ -1,3 +1,5 @@
+# Author: Duan & Tan
+
 import numpy as np
 from numpy import dot
 

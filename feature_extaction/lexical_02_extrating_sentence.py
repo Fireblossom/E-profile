@@ -1,3 +1,5 @@
+# Author: Tan
+
 address = r'E:\Uni-Stuttgart\2nd\Computational Linguistics Team Laboratory\datasets\emotions\ssec\extract manual feature'
 
 # train.csv including two lines must be deleted at first

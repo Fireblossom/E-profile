@@ -1,3 +1,5 @@
+# Author: Tan
+
 address = r'E:\Uni-Stuttgart\2nd\Computational Linguistics Team Laboratory\datasets\emotions\ssec\extract manual feature'
 label = ['Anger', 'Anticipation', 'Disgust', 'Fear', 'Joy', 'Sadness', 'Surprise', 'Trust']
 

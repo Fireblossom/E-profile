@@ -1,3 +1,5 @@
+# Author: Tan
+
 label = ['Anger', 'Anticipation', 'Disgust', 'Fear', 'Joy', 'Sadness', 'Surprise', 'Trust']
 
 '''

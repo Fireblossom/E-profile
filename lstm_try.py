@@ -1,14 +1,15 @@
+# Author: Duan
+
 from models.lstm import LSTMModel, load_vector, merge_embdding, syntax_features
 from models.tools.Corpus import Corpus
 
 
-def run():
+def run(is_on):
     print("Start")
     wordemb, vecmat = load_vector('new_embdding.txt')
     embedding = merge_embdding(wordemb, vecmat)
     train_corpus = Corpus('train.csv')
     manual_features = syntax_features(train_corpus)
-    print(manual_features)
 
     CONF = dict(veclen=len(embedding[0]),
                 maxlen=64,
@@ -18,7 +19,7 @@ def run():
                 )
     model = LSTMModel()
 
-    model.build_model(CONF)
+    model.build_model(CONF, is_on)
     model.model.summary()
 
     model.train(train_corpus, CONF, 100, 64)

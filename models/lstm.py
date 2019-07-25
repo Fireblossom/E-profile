@@ -1,3 +1,5 @@
+# Author: Duan
+
 import math
 import keras
 import numpy as np
@@ -18,30 +20,33 @@ class LSTMModel(object):
         print('[Model] Loading model from file %s' % filepath)
         return keras.models.load_model(filepath, custom_objects={'ONLSTM': ONLSTM})
 
-    def build_model(self, config):
+    def build_model(self, config, is_on):
         main_input = Input(shape=(config['maxlen'],), dtype='int32', name='main_input')
         x = Embedding(input_dim=len(config['word_index']),
                       output_dim=config['veclen'],
                       weights=[config['embedding_matrix']],
                       input_length=config['maxlen'],
                       trainable=False)(main_input)
-        x = Bidirectional(ONLSTM(units=64, chunk_size=8, return_sequences=True, recurrent_dropconnect=0.25))(x)
-        # x = Bidirectional(CuDNNLSTM(units=64, return_sequences=True))(x)
-        x = Dropout(0.2)(x)
-        x = Bidirectional(ONLSTM(units=64, chunk_size=8, recurrent_dropconnect=0.25))(x)
-        # x = Bidirectional(CuDNNLSTM(units=64))(x)
-        lstm_out = Dropout(0.2)(x)
-        # lstm_out = Bidirectional(ONLSTM(units=64, chunk_size=4))(x)
+        if is_on:
+            x = Bidirectional(ONLSTM(units=64, chunk_size=8, return_sequences=True, recurrent_dropconnect=0.25))(x)
+        else:
+            x = Bidirectional(CuDNNLSTM(units=64, return_sequences=True))(x)
+            x = Dropout(0.2)(x)
+        if is_on:
+            lstm_out = Bidirectional(ONLSTM(units=64, chunk_size=8, recurrent_dropconnect=0.25))(x)
+        else:
+            x = Bidirectional(CuDNNLSTM(units=64))(x)
+            lstm_out = Dropout(0.2)(x)
 
         feature_input = Input(shape=(len(config['syntax_features'][0]),), name='feature_input')
         x = keras.layers.concatenate([lstm_out, feature_input])
 
-        x_1 = Dense(units=32, activation='relu')(x)
+        x = Dense(units=32, activation='relu')(x)
 
-        main_output_1 = Dense(units=1, activation='sigmoid')(x_1)
+        main_output = Dense(units=1, activation='sigmoid')(x)
 
         self.model = Model(inputs=[main_input, feature_input],
-                           outputs=main_output_1)
+                           outputs=main_output)
         self.model.compile(optimizer='adam', loss=keras.losses.binary_crossentropy, metrics=['accuracy'])
 
     def train(self, corpus, config, epochs, batch_size, save_dir='train/'):
@@ -96,6 +101,12 @@ class LSTMModel(object):
 
 
 def prep_x(corpus, word_dict):
+    """
+    Convert word sequences to key sequences in dict, adding special tokens.
+    :param corpus:
+    :param word_dict:
+    :return: Key sequences to be inputted in embedding layer.
+    """
     x = []
     # The first indices are reserved
     word_index = {k: (v + 3) for k, v in word_dict.items()}
@@ -162,7 +173,7 @@ def load_vector(vector_file):
 
 def new_file(dir):
     """
-    find newest file in dir.
+    Find newest file in dir.
     :param dir:
     :return:
     """
@@ -188,6 +199,13 @@ def res_prep(raw_result):
 
 
 def merge_embdding(wordemb, vecmat, path='features'):
+    """
+    Merge word embedding matrix with features, extending the dimension of word vectors form 300 to 324.
+    :param wordemb: Dict of word embedding.
+    :param vecmat: Original 300-dim GloVe matrix.
+    :param path: Path to lexical feature files.
+    :return: Merged word embedding matrix.
+    """
     dicts = dict_generator(path)
     features = np.zeros((vecmat.shape[0], len(dicts)))
     for word in wordemb:
@@ -203,6 +221,12 @@ def merge_embdding(wordemb, vecmat, path='features'):
 
 
 def syntax_features(corpus, path='syntax'):
+    """
+    Generate syntax features from sentences using roles in the specific path.
+    :param corpus: Corpus object that contains POS sequence
+    :param path: Path to feature files.
+    :return: Syntax features of each sentences.
+    """
     def subsequences(lst):
         re = set()
         for l in range(3, 8):

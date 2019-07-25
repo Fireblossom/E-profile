@@ -1,3 +1,5 @@
+# Author: Duan
+
 from nltk.corpus import stopwords
 import models.tools.gen_label
 from nltk.tokenize import TweetTokenizer

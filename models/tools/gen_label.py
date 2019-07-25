@@ -1,3 +1,5 @@
+# Author: Duan
+
 def gen_label(line):
     """
     generate a list of label, 1 is positive, 0 is negative.

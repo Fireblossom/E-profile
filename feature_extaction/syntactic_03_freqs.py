@@ -1,3 +1,5 @@
+# Author: Tan
+
 import nltk
 import re
 from nltk.tokenize import TweetTokenizer
