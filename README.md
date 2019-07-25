@@ -1,11 +1,4 @@
 # E-profile
 
-
-blahblah
-
-TODO:
-- [x] Eval (TAN)
-- [x] Restructuring (DUAN)
-- [x] Perceptron - Linear classification (DUAN)
-- [x] Feature Extraction (TAN)
-- [ ] N-gram (DUAN)
+1 and 2 work in any env. 
+3 and 4 only work in GPU env.
