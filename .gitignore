@@ -110,4 +110,4 @@ train.csv
 val.csv
 *.csv
 *.h5
-*.txt
+
