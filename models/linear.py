@@ -12,7 +12,7 @@ class L_classifier:
         self.labels = labels
         self.w = []
 
-    def train(self, corpus):
+    def train(self, corpus, dicts, syntax_feature):
         """
         read corpus, generate features and convert features to vector, then train the hyperplane w.
         :param corpus:
@@ -22,14 +22,14 @@ class L_classifier:
             labels = []
             vectors = []
             for inst in range(len(corpus.text)):
-                feature = corpus.text[inst].feature_extraction()
+                feature = corpus.text[inst].feature_extraction(dicts)
                 # print(feature)
-                vectors.append(feature2vector(feature, corpus.tf_idf))
+                vectors.append(list(syntax_feature[inst])+feature2vector(feature, corpus.tf_idf))
                 # print(vector)
                 labels.append(corpus.gold[inst][label])
             self.w.append(perceptron(vectors, labels))
 
-    def predict(self, corpus, tf_idf):
+    def predict(self, corpus, tf_idf, dicts, syntax_feature):
         """
         read corpus, making predict using the trained w, return labels for all instance in corpus.
         :param corpus:
@@ -40,33 +40,14 @@ class L_classifier:
         for inst in range(len(corpus.text)):
             labels = []
             for label in range(self.labels):
-                if dot(self.w[label], feature2vector(corpus.text[inst].feature_extraction(), tf_idf)) >= 0:
+                if dot(self.w[label],
+                       list(syntax_feature[inst])+feature2vector(corpus.text[inst].feature_extraction(dicts),
+                                      tf_idf)) >= 0:
                     labels.append(1)
                 else:
                     labels.append(0)
             predict.append(labels)
         return predict
-
-    def test_sentence(self, sentence, tf_idf):
-        """
-        input a string of sentence, and return a list of label which is the predict labels for input.
-        :param sentence:
-        :param tf_idf: the tf_idf dictionary of train set used for vector generation
-        :return: a list of label which is the predict labels for input.
-        """
-        from nltk.tokenize import TweetTokenizer
-        tknzr = TweetTokenizer(strip_handles=True, reduce_len=True)
-        tokens = tknzr.tokenize(sentence)
-        import models.tools.Corpus
-        terms = models.tools.Corpus.normalization(tokens)
-        words = models.tools.Corpus.text(terms)
-        labels = []
-        for label in range(self.labels):
-            if dot(self.w[label], feature2vector(words.feature_extraction(), tf_idf)) >= 0:
-                labels.append(1)
-            else:
-                labels.append(0)
-        return labels
 
 
 def perceptron(vectors, labels):
@@ -76,18 +57,19 @@ def perceptron(vectors, labels):
     :param labels: gold labels
     :return: trained hyperplane w.
     """
-    w = np.array([0] * len(vectors[0]))
+    w = np.array([0.0] * len(vectors[0]))
     flag = False
     count = 0
     while not flag and count < 1000:
         for i in range(len(vectors)):
-            t = dot(vectors[i], w)
+            vec = np.array(vectors[i], dtype=np.float64)
+            t = dot(vec, w)
             if t <= 0 and labels[i] == 1:
-                w += vectors[i]
+                w += 0.1 * vec
                 flag = False
                 break
             if t >= 0 and labels[i] == 0:
-                w -= vectors[i]
+                w -= 0.1 * vec
                 flag = False
                 break
             flag = True
@@ -105,16 +87,17 @@ def feature2vector(feature, tf_idf):
     :return:
     """
     vector = []
-    for elem in feature[:3]:
-        vector.append(elem)
-        '''
+
+    for elem in feature[:40]:
         if elem is True:
-            vector.append(1)
+            vector.append(1.0)
         elif elem is False:
-            vector.append(-1)
-            '''
+            vector.append(-1.0)
+        elif type(elem) != str:
+            vector.append(elem)
+
     for word in tf_idf.keys():
-        vector.append(0 * feature[3:].count(word))
+        vector.append(tf_idf[word] * feature.count(word))
     # print(vector)
-    return vector[:3]
+    return vector
 

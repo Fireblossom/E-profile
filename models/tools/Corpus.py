@@ -65,7 +65,10 @@ class Corpus:
                                round(res['Precision'][label], 4),
                                round(res['F-score'][label], 4)
                                ])
-            table.add_row(['', '', '', '', '', 'Macro', round(sum(res['F-score']) / len(res['F-score']), 4)])
+            P = sum(res['TP']) / (sum(res['TP']) + sum(res['FP']))
+            R = sum(res['TP']) / (sum(res['TP']) + sum(res['FN']))
+            table.add_row(['', '', '', 'Micro', round(2*P*R/(P+R), 4), 'Macro',
+                           round(sum(res['F-score']) / len(res['F-score']), 4)])
             return table
         else:
             return False
@@ -98,12 +101,6 @@ class Corpus:
         return tf_idf
 
 
-WANT_TAGS = {'JJ', 'JJR', 'JJS'}
-NEG_ADJ = {'wrong', 'bad', 'last', 'dear', 'NOT_equal', 'dead', 'illegal', 'stupid', 'serious', 'worse'}
-POS_ADJ = {'good', 'great', 'best', 'happy', 'greatest', 'beautiful', 'agree', 'amazing', 'welcome', 'clear', 'awesome',
-           'equal', 'right', 'brilliant', 'dangerous', 'excited', 'nice', 'responsible', 'honest'}
-
-
 class text:
     def __init__(self, words):
         self.words = [x[0] for x in words]
@@ -121,7 +118,10 @@ class text:
                 if word not in dicts[i]:
                     continue
                 elif dicts[i][word] != 0:
-                    features[i] = dicts[i][word]
+                    if features[i] is not False:
+                        features[i] = max(math.log2(dicts[i][word]), features[i])
+                    else:
+                        features[i] = math.log2(dicts[i][word])
         #print(features)
         return features
 
